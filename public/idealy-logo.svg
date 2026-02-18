@@ -1,0 +1,26 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Icon - Light bulb with code -->
+  <g transform="translate(10, 10)">
+    <!-- Light bulb -->
+    <path d="M20 5C15.029 5 11 9.029 11 14C11 16.988 12.527 19.627 14.828 21.188C15.578 21.719 16 22.578 16 23.5V25.5C16 26.881 17.119 28 18.5 28H21.5C22.881 28 24 26.881 24 25.5V23.5C24 22.578 24.422 21.719 25.172 21.188C27.473 19.627 29 16.988 29 14C29 9.029 24.971 5 20 5Z" fill="url(#logoGrad)"/>
+    
+    <!-- Code brackets -->
+    <path d="M14 30L11 33L14 36" stroke="url(#logoGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M26 30L29 33L26 36" stroke="url(#logoGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Spark -->
+    <circle cx="20" cy="14" r="2.5" fill="white" opacity="0.9"/>
+  </g>
+  
+  <!-- Text "Idealy" -->
+  <text x="60" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="700" fill="#1f2937">
+    Idealy
+  </text>
+</svg>

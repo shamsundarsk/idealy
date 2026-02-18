@@ -1,0 +1,56 @@
+// Prisma schema for Idealy problem analysis
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Problem {
+  id                   String   @id @default(uuid())
+  title                String
+  description          String   @db.Text
+  affected_users       String
+  category             String
+  severity             String
+  status               String   // SOLVED, PARTIALLY_SOLVED, UNSOLVED
+  confidence_score     Int
+  existing_solutions   Json     // Array of solutions
+  gap_analysis         String   @db.Text
+  opportunity_score    Int
+  build_potential_score Int
+  severity_score       Int
+  build_recommendation String   // BUILD, IMPROVE_EXISTING, DO_NOT_BUILD
+  source               String   // hackernews, github, producthunt, indiehackers, user
+  source_url           String?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+  
+  // Indexes for efficient querying
+  @@index([status])
+  @@index([opportunity_score])
+  @@index([build_potential_score])
+  @@index([category])
+  @@index([source])
+  @@index([created_at])
+  @@map("problems")
+}
+
+model ScrapingJob {
+  id          String   @id @default(uuid())
+  source      String   // hackernews, github, producthunt, indiehackers
+  status      String   // pending, running, completed, failed
+  items_found Int      @default(0)
+  items_analyzed Int   @default(0)
+  started_at  DateTime @default(now())
+  completed_at DateTime?
+  error       String?  @db.Text
+  
+  @@index([source])
+  @@index([status])
+  @@index([started_at])
+  @@map("scraping_jobs")
+}
