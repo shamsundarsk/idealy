@@ -12,6 +12,33 @@ import {
   UserSubmissionAnalysisSchema,
 } from './problem-schemas'
 
+// Provider-specific configurations
+const PROVIDER_CONFIGS = {
+  groq: {
+    url: 'https://api.groq.com/openai/v1/chat/completions',
+    model: 'llama-3.3-70b-versatile',
+    temperature: 0.3,
+    max_tokens: 2000,
+  },
+  ollama: {
+    url: process.env.OLLAMA_URL || 'http://localhost:11434/v1/chat/completions',
+    model: 'llama3',
+    temperature: 0.3,
+    max_tokens: 2000,
+  },
+  openai: {
+    url: 'https://api.openai.com/v1/chat/completions',
+    model: 'gpt-4o-mini',
+    temperature: 0.3,
+    max_tokens: 2000,
+  },
+}
+
+function getDefaultModel(): string {
+  const provider = (process.env.AI_PROVIDER || 'groq').toLowerCase()
+  return PROVIDER_CONFIGS[provider as keyof typeof PROVIDER_CONFIGS]?.model || 'llama-3.3-70b-versatile'
+}
+
 // AI Provider configuration - supports multiple providers
 const AI_PROVIDER = process.env.AI_PROVIDER || 'groq' // groq, ollama, openai
 const AI_MODEL = process.env.AI_MODEL || getDefaultModel()
@@ -35,33 +62,6 @@ function getApiKeys(): string[] {
   
   // Remove duplicates
   return [...new Set(keys.filter(Boolean))]
-}
-
-// Provider-specific configurations
-const PROVIDER_CONFIGS = {
-  groq: {
-    url: 'https://api.groq.com/openai/v1/chat/completions',
-    model: 'mixtral-8x7b-32768',
-    temperature: 0.3,
-    max_tokens: 2000,
-  },
-  ollama: {
-    url: process.env.OLLAMA_URL || 'http://localhost:11434/v1/chat/completions',
-    model: 'llama3',
-    temperature: 0.3,
-    max_tokens: 2000,
-  },
-  openai: {
-    url: 'https://api.openai.com/v1/chat/completions',
-    model: 'gpt-4o-mini',
-    temperature: 0.3,
-    max_tokens: 2000,
-  },
-}
-
-function getDefaultModel(): string {
-  const provider = AI_PROVIDER.toLowerCase()
-  return PROVIDER_CONFIGS[provider as keyof typeof PROVIDER_CONFIGS]?.model || 'mixtral-8x7b-32768'
 }
 
 function getProviderConfig() {
