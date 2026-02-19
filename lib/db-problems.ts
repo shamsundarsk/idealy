@@ -1,14 +1,34 @@
 // Make Prisma optional - only use if database is configured
 let prisma: any = null
+let databaseAvailable = false
 
 try {
   const { PrismaClient } = require('@prisma/client')
   prisma = new PrismaClient()
+  databaseAvailable = true
+  console.log('[Idealy] Prisma client initialized')
 } catch (error) {
   console.log('[Idealy] Database not configured, using mock data')
+  databaseAvailable = false
 }
 
-const isDatabaseAvailable = () => prisma !== null
+const isDatabaseAvailable = () => databaseAvailable
+
+/**
+ * Test database connection and disable if it fails
+ */
+async function testConnection() {
+  if (!prisma) return false
+  
+  try {
+    await prisma.$connect()
+    return true
+  } catch (error) {
+    console.log('[Idealy] Database connection failed, disabling database features')
+    databaseAvailable = false
+    return false
+  }
+}
 
 /**
  * Save analyzed problem to database
@@ -42,9 +62,14 @@ export async function saveProblem(problem: any) {
       },
     })
     return saved
-  } catch (error) {
-    console.error('[Idealy] Failed to save problem:', error)
-    throw error
+  } catch (error: any) {
+    console.error('[Idealy] Failed to save problem:', error.message)
+    // Disable database on connection errors
+    if (error.code === 'P1001' || error.message?.includes("Can't reach database")) {
+      console.log('[Idealy] Disabling database due to connection error')
+      databaseAvailable = false
+    }
+    return null
   }
 }
 
@@ -79,19 +104,44 @@ export async function getProblems(options: {
     sortOrder = 'desc',
   } = options
 
-  const where: any = {}
-  if (status) where.status = status
-  if (category) where.category = category
-  if (source) where.source = source
+  try {
+    const where: any = {}
+    if (status) where.status = status
+    if (category) where.category = category
+    if (source) where.source = source
 
-  const problems = await prisma.problem.findMany({
-    where,
-    orderBy: {
-      [sortBy]: sortOrder,
-    },
-    take: limit,
-    skip: offset,
-  })
+    const problems = await prisma.problem.findMany({
+      where,
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
+      take: limit,
+      skip: offset,
+    })
+
+    const total = await prisma.problem.count({ where })
+
+    return {
+      problems,
+      total,
+      limit,
+      offset,
+    }
+  } catch (error: any) {
+    console.error('[Idealy] Database query failed:', error.message)
+    // Disable database on connection errors
+    if (error.code === 'P1001' || error.message?.includes("Can't reach database")) {
+      console.log('[Idealy] Disabling database due to connection error')
+      databaseAvailable = false
+    }
+    return {
+      problems: [],
+      total: 0,
+      limit,
+      offset,
+    }
+  }
+}
 
   const total = await prisma.problem.count({ where })
 
@@ -178,12 +228,23 @@ export async function createScrapingJob(source: string) {
   if (!isDatabaseAvailable()) {
     return { id: `mock-${Date.now()}`, source, status: 'pending' }
   }
-  return await prisma.scrapingJob.create({
-    data: {
-      source,
-      status: 'pending',
-    },
-  })
+  
+  try {
+    return await prisma.scrapingJob.create({
+      data: {
+        source,
+        status: 'pending',
+      },
+    })
+  } catch (error: any) {
+    console.error('[Idealy] Failed to create scraping job:', error.message)
+    // Disable database on connection errors
+    if (error.code === 'P1001' || error.message?.includes("Can't reach database")) {
+      console.log('[Idealy] Disabling database due to connection error')
+      databaseAvailable = false
+    }
+    return { id: `mock-${Date.now()}`, source, status: 'pending' }
+  }
 }
 
 /**
@@ -200,10 +261,21 @@ export async function updateScrapingJob(
   }
 ) {
   if (!isDatabaseAvailable()) return null
-  return await prisma.scrapingJob.update({
-    where: { id },
-    data,
-  })
+  
+  try {
+    return await prisma.scrapingJob.update({
+      where: { id },
+      data,
+    })
+  } catch (error: any) {
+    console.error('[Idealy] Failed to update scraping job:', error.message)
+    // Disable database on connection errors
+    if (error.code === 'P1001' || error.message?.includes("Can't reach database")) {
+      console.log('[Idealy] Disabling database due to connection error')
+      databaseAvailable = false
+    }
+    return null
+  }
 }
 
 /**
