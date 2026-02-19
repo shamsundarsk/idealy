@@ -1,6 +1,8 @@
 // Make Prisma optional - only use if database is configured
 let prisma: any = null
 let databaseAvailable = false
+let lastConnectionAttempt = 0
+const CONNECTION_RETRY_INTERVAL = 30000 // Retry every 30 seconds
 
 try {
   const { PrismaClient } = require('@prisma/client')
@@ -12,7 +14,14 @@ try {
   databaseAvailable = false
 }
 
-const isDatabaseAvailable = () => databaseAvailable
+const isDatabaseAvailable = () => {
+  // If database was disabled but enough time has passed, allow retry
+  if (!databaseAvailable && prisma && Date.now() - lastConnectionAttempt > CONNECTION_RETRY_INTERVAL) {
+    console.log('[Idealy] Retrying database connection...')
+    databaseAvailable = true
+  }
+  return databaseAvailable
+}
 
 /**
  * Test database connection and disable if it fails
@@ -22,10 +31,13 @@ async function testConnection() {
   
   try {
     await prisma.$connect()
+    console.log('[Idealy] Database connection successful')
+    databaseAvailable = true
     return true
   } catch (error) {
-    console.log('[Idealy] Database connection failed, disabling database features')
+    console.log('[Idealy] Database connection failed, will retry in 30s')
     databaseAvailable = false
+    lastConnectionAttempt = Date.now()
     return false
   }
 }
@@ -66,8 +78,9 @@ export async function saveProblem(problem: any) {
     console.error('[Idealy] Failed to save problem:', error.message)
     // Disable database on connection errors
     if (error.code === 'P1001' || error.message?.includes("Can't reach database")) {
-      console.log('[Idealy] Disabling database due to connection error')
+      console.log('[Idealy] Disabling database due to connection error, will retry in 30s')
       databaseAvailable = false
+      lastConnectionAttempt = Date.now()
     }
     return null
   }
@@ -131,8 +144,9 @@ export async function getProblems(options: {
     console.error('[Idealy] Database query failed:', error.message)
     // Disable database on connection errors
     if (error.code === 'P1001' || error.message?.includes("Can't reach database")) {
-      console.log('[Idealy] Disabling database due to connection error')
+      console.log('[Idealy] Disabling database due to connection error, will retry in 30s')
       databaseAvailable = false
+      lastConnectionAttempt = Date.now()
     }
     return {
       problems: [],
@@ -230,8 +244,9 @@ export async function createScrapingJob(source: string) {
     console.error('[Idealy] Failed to create scraping job:', error.message)
     // Disable database on connection errors
     if (error.code === 'P1001' || error.message?.includes("Can't reach database")) {
-      console.log('[Idealy] Disabling database due to connection error')
+      console.log('[Idealy] Disabling database due to connection error, will retry in 30s')
       databaseAvailable = false
+      lastConnectionAttempt = Date.now()
     }
     return { id: `mock-${Date.now()}`, source, status: 'pending' }
   }
@@ -261,8 +276,9 @@ export async function updateScrapingJob(
     console.error('[Idealy] Failed to update scraping job:', error.message)
     // Disable database on connection errors
     if (error.code === 'P1001' || error.message?.includes("Can't reach database")) {
-      console.log('[Idealy] Disabling database due to connection error')
+      console.log('[Idealy] Disabling database due to connection error, will retry in 30s')
       databaseAvailable = false
+      lastConnectionAttempt = Date.now()
     }
     return null
   }
