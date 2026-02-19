@@ -143,16 +143,6 @@ export async function getProblems(options: {
   }
 }
 
-  const total = await prisma.problem.count({ where })
-
-  return {
-    problems,
-    total,
-    limit,
-    offset,
-  }
-}
-
 /**
  * Get problem by ID
  */
